@@ -29,6 +29,14 @@ class TraceAction {
     this(actionId, classMatcherExp, methodMatcherExp, null);
   }
 
+  public String getActionId() {
+    return actionId;
+  }
+
+  public String[] getActionArgs() {
+    return new String[] {classMatcherExp, methodMatcherExp, actionArgs};
+  }
+
   @Override
   public String toString() {
     return "{"

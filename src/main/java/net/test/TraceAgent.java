@@ -14,6 +14,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Level;
 
 public class TraceAgent {
 
@@ -74,18 +78,39 @@ public class TraceAgent {
   }
 
   private void installActions(List<TraceAction> actions) {
+
+    Map<String, Level> Levels = new HashMap<String, Level>();
+
+    Levels.put("fatal", Level.FATAL);
+    Levels.put("error", Level.ERROR);
+    Levels.put("warn", Level.WARN);
+    Levels.put("info", Level.INFO);
+    Levels.put("debug", Level.DEBUG);
+    Levels.put("trace", Level.TRACE);
+
     System.out.println("TraceAgent tries to install actions: " + actions);
     for (TraceAction action : actions) {
-      final Object interceptor = action.getActionInterceptor(traceAgentArgs);
-      if (interceptor != null) {
-        new AgentBuilder.Default()
-            .type(action.getClassMatcher())
-            .transform(
-                (builder, type, classLoader, module) ->
-                    builder
-                        .method(action.getMethodMatcher())
-                        .intercept(MethodDelegation.to(interceptor)))
-            .installOn(instrumentation);
+      if (action.getActionId().equals("log4j_loglevel")) {
+        String[] args = action.getActionArgs();
+        if (args[0].equals("rootlogger")) {
+          LogManager.getRootLogger().setLevel(Levels.get(args[1]));
+        } else {
+
+          LogManager.getLogger(args[0] + "." + args[1]).setLevel(Levels.get(args[2]));
+        }
+      } else {
+
+        final Object interceptor = action.getActionInterceptor(traceAgentArgs);
+        if (interceptor != null) {
+          new AgentBuilder.Default()
+              .type(action.getClassMatcher())
+              .transform(
+                  (builder, type, classLoader, module) ->
+                      builder
+                          .method(action.getMethodMatcher())
+                          .intercept(MethodDelegation.to(interceptor)))
+              .installOn(instrumentation);
+        }
       }
     }
     System.out.println("TraceAgent installed actions successfully");
